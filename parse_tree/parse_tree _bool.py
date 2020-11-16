@@ -4,7 +4,7 @@ import operator
 
 
 def buildParseTree(fpexp):
-    fplist = split_expression(fpexp)  # Exercise question
+    fplist = split_expression(fpexp)
     pStack = Stack()
     eTree = BinaryTree('')
     pStack.push(eTree)
@@ -16,7 +16,7 @@ def buildParseTree(fpexp):
             pStack.push(currentTree)
             currentTree = currentTree.getLeftChild()
 
-        elif i in ['+', '-', '*', '/']:
+        elif i in ['and', 'or', 'not']:
             currentTree.setRootVal(i)
             currentTree.insertRight('')
             pStack.push(currentTree)
@@ -25,9 +25,9 @@ def buildParseTree(fpexp):
         elif i == ')':
             currentTree = pStack.pop()
 
-        elif i not in ['+', '-', '*', '/', ')']:
+        elif i not in ['and', 'or', 'not', ')']:
             try:
-                currentTree.setRootVal(int(i))
+                currentTree.setRootVal(i)
                 parent = pStack.pop()
                 currentTree = parent
 
@@ -37,39 +37,53 @@ def buildParseTree(fpexp):
     return eTree
 
 
-def split_expression(a_string):
-    """
-    Split the expression, will ignore spaces.
-    This assumes digits are not larger than 3.
-    This is exercise 1 in runestone
-    :return: list of the split expression
-    """
-    final = [i for i in a_string if i != ' ']
-    final_rng = len(final) - 1
-    i = 0
-    while i < final_rng:
-        if final[i] in '0123456789':
-            next_idx = i + 1
-            while final[next_idx] in '0123456789' and next_idx < final_rng:
-                final[i] += final[next_idx]
-                final.pop(next_idx)
-                final_rng = final_rng - 1
-
-        i += 1
-
-    return final
+def split_expression(fpexp):
+    a_list = fpexp.split()
+    for i in range(len(a_list) - 1):
+        if a_list[i] == 'True':
+            a_list[i] = True
+        elif a_list[i] == 'False':
+            a_list[i] = False
+        elif a_list[i] not in 'andornot()':
+            raise NameError("Only True, False and logic operators allowed")
+    return a_list
 
 
 def evaluate(parseTree):
-    opers = {'+': operator.add, '-': operator.sub,
-             '*': operator.mul, '/': operator.truediv,
-             '<': operator.lt, '>': operator.gt}
+    opers = {'and': operator.and_, 'or': operator.or_,
+             'not': operator.not_}
 
     leftC = parseTree.getLeftChild()
     rightC = parseTree.getRightChild()
 
+    result = None
     if leftC and rightC:
         fn = opers[parseTree.getRootVal()]
-        return fn(evaluate(leftC), evaluate(rightC))
+        result = fn(evaluate(leftC), evaluate(rightC))
+    elif leftC or rightC:
+        fn = opers[parseTree.getRootVal()]
+        if leftC and rightC is None: # Not Operator
+            result = fn(evaluate(leftC))
+        elif rightC and leftC is None: # Not Operator
+            result = fn(evaluate(rightC))
     else:
-        return parseTree.getRootVal()
+        result = parseTree.getRootVal()
+
+    return result
+
+
+def main():
+    pt = buildParseTree('( False and False )')  #False
+    pt1 = buildParseTree('( False and True )')  # False
+    pt2 = buildParseTree('( False or True )')  # True
+    #  pt3 = buildParseTree('( not False )') # True
+    #  pt.postorder()
+    print(evaluate(pt))
+    print(evaluate(pt1))
+    print(evaluate(pt2))
+    #  print(evaluate(pt3))
+
+
+
+if __name__ == '__main__':
+    main()
